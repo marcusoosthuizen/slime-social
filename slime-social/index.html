@@ -1,0 +1,209 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta http-equiv="X-UA-Compatible" content="IE=edge">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Silkscreen&display=swap" rel="stylesheet"> 
+  <link rel="stylesheet" href="style.css">
+  <link rel="icon" type="image/x-icon" href="/slime-favicon.png">
+  <title>Slime Social</title>
+</head>
+<body>
+  <div class="topbar">
+    <h1 id="bar-title"><b>Slime Social</b></h1>
+    <img id="slime-bop" src="slime.gif">
+
+    <h3 id="username-label"></h2>
+    <img src="settings.png" id="settings-button" onclick="">
+    <input type="text" id="username-input" placeholder="Enter Username" onkeypress="username_submit(event)">
+    <img src="continue.png" id="username-button" onclick="username_submit('enter')">
+  </div>
+  
+  <div class="chat" id="chat">
+    <ul id="messages">
+      <li style="margin-top: auto; text-align: center;"><i>Welcome to the chatroom :)</i></li>
+    </ul>
+    <li id="online-users" style="margin-top: auto; text-align: center; color: lightgreen; list-style-type: none; font-style: italic;">? Users Online</li>
+    <h3 id="chat-label">Select a username to begin chatting</h3>
+    <div id="input-box">
+      <input id="chat-input" type="text" onkeypress="submit(event)">
+      <img src="continue.png" id="chat-button" onclick="submit('enter')">
+    </div>
+    
+  </div>
+  <a target="_blank" href="https://discord.gg/SGagVj68Tn" style="color: lightgreen;"><footer id="otherbottom">Join the Discord!</footer></a>
+  <a target="_blank" href="https://marcusoosthuizen.com" style="color: lightgreen;"><footer id="bottom">Slime Social v0.2.2</footer></a>
+  <!--<script src="/socket.io/socket.io.js"></script>-->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/socket.io/4.6.0/socket.io.js"></script>
+  <script>
+    //var socket = io();
+    
+    var socket = io("localhost:8080");
+    var messages = document.getElementById('messages')
+    var user_id = Math.random().toString(16).slice(2)
+    var username = ""
+    /*socket.emit('register_user', user_id);*/
+
+    function username_submit(event) {
+      if (event.key == "Enter" || event == "enter") {
+        username = document.getElementById("username-input").value;
+        username = spaceChecker(username)
+        if (username.length > 12) {
+          alert("Username is too long (max length = 12)");
+        } else if (username.length < 3) {
+          alert("Username is too short (min length = 3)");
+        } else {
+          socket.emit('assign_username', username);
+          
+        }
+      }
+    }
+
+    function submit(event) {
+      if (event.key == "Enter" || event == "enter") {
+        var chatInput = document.getElementById("chat-input").value;
+        chatInput = spaceChecker(chatInput);
+        if (chatInput.length > 140) {
+          alert("Message is too long (max length = 140)");
+        } else if (chatInput.length < 1) {
+          alert("You can't send nothing silly ;P");
+        } else {
+          socket.emit('submit_message', chatInput);
+          document.getElementById("chat-input").value = "";
+
+          var item = document.createElement('li');
+          item.textContent = msg;
+          messages.appendChild(item);
+          messages.scrollTo(0, messages.scrollHeight);
+        }
+      }
+      
+    }
+
+    function spaceChecker(message) {
+      returner = "";
+      for (let i = 0; i < message.length; i++) {
+        if (message[i] != " ") {
+          message = message.slice(i);
+          returner = message;
+          break;
+        }
+      }
+      for (let i = message.length - 1; i > -1; i--) {
+        if (message[i] != " ") {
+          message = message.slice(0, i + 1);
+          returner = message;
+          break;
+        }
+      }
+      return returner;
+    }
+
+    socket.on('chat_message', function(msg) {
+      if (msg.length > 1) {
+          var item = document.createElement('li');
+      
+          var bold = document.createElement('b');
+          bold.textContent = msg[0];
+          item.appendChild(bold);
+
+          var time = document.createElement('i');
+          time.textContent = " " + new Date(msg[1] * 1000).toLocaleString('en-AU', { timeZone: "Australia/Perth", hour: 'numeric', minute: 'numeric', hour12: true });
+          time.style.color = "darkgrey"
+          item.appendChild(time);
+
+          item.appendChild(document.createElement('br'))
+
+          var label = document.createElement('label');
+          label.textContent = "  " + msg[2];
+          label.style.color = "lightgrey"
+          item.appendChild(label);
+        } else {
+          var item = document.createElement('li');
+          item.style.color = "darkgrey"
+          item.textContent = msg[0];
+        }
+        
+        
+        
+        messages.appendChild(item);
+        messages.scrollTo(0, messages.scrollHeight);
+    });
+    socket.on('list_update', function(msg) {
+      if (msg != 1) {
+        document.getElementById("online-users").textContent = msg + " users online"
+      } else {
+        document.getElementById("online-users").textContent = msg + " user online"
+      }
+      
+    });
+    socket.on('history', function(msg) {
+      for (i in msg) {
+        msgg = msg[i]
+        if (msgg.length > 1) {
+          var item = document.createElement('li');
+      
+          var bold = document.createElement('b');
+          bold.textContent = msgg[0];
+          item.appendChild(bold);
+
+          var time = document.createElement('i');
+          time.textContent = " " + new Date(msgg[1] * 1000).toLocaleString('en-AU', { timeZone: "Australia/Perth", hour: 'numeric', minute: 'numeric', hour12: true });
+          time.style.color = "darkgrey"
+          item.appendChild(time);
+
+          item.appendChild(document.createElement('br'))
+
+          var label = document.createElement('label');
+          label.textContent = "  " + msgg[2];
+          label.style.color = "lightgrey"
+          item.appendChild(label);
+        } else {
+          var item = document.createElement('li');
+          item.style.color = "darkgrey"
+          item.textContent = msgg[0];
+        }
+        
+        
+        
+        messages.appendChild(item);
+        messages.scrollTo(0, messages.scrollHeight);
+      }
+      
+    });
+    socket.on('disconnect', function() {
+      alert("You have been disconnected, please reload your page");
+      
+    });
+    socket.on('taken', function() {
+      alert("Someone already has that username, please choose a different one");
+    });
+    socket.on('toofast', function() {
+      alert("You are sending messages too fast, please try again");
+    });
+
+    socket.on('accepted', function() {
+      document.getElementById("username-button").style.display = "none";
+      document.getElementById("username-input").style.display = "none";
+      document.getElementById("chat-label").style.display = "none";
+      document.getElementById("settings-button").style.display = "grid";
+      document.getElementById("username-label").style.display = "grid";
+      document.getElementById("input-box").style.display = "flex";
+      document.getElementById("username-label").textContent = username
+    });
+
+  </script>
+</body>
+</html>
+
+<!-- 
+  I plan for the next major update to focus around customisation and notifications. Here is a short list of features that may or may not make it next update:
+
+  - Functionality for the settings button. Yes it will actually do something now
+  - The ability to ping users based on their username. Which leads us into....
+  - Browser notifications. You will be able to choose between receiving notifications for everything, only pings or none (The default will be only pings)
+  - Being able to set a color for your name. This will help users better tell each other apart.
+-->
